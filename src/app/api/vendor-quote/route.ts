@@ -53,12 +53,13 @@ export async function POST(req: NextRequest) {
 
       // 2. Contextual AI flags for this vendor
       const contextualAiFlags: VendorRedFlag[] = aiData.aiRedFlags
-        .filter((f) => f.vendorIndex === idx)
-        .map((f, fIdx) => ({
+        .filter((f: { vendorIndex: number }) => f.vendorIndex === idx)
+        .map((f: { severity: 'low' | 'medium' | 'high'; message: string }, fIdx: number) => ({
           ruleId: `ai_contextual_${fIdx}`,
           severity: f.severity,
+          title: 'Contextual AI Flag',
           message: f.message,
-          source: 'ai',
+          source: 'ai' as const,
         }));
 
       const allFlags = [...ruleFlags, ...contextualAiFlags];
@@ -67,7 +68,7 @@ export async function POST(req: NextRequest) {
 
       // Curate specific questions and "in writing" checklist
       const questionsToAsk = [
-        ...vendorQuote.missingInfo.map((info) => `Clarify deliverable: ${info}`),
+        ...vendorQuote.missingInfo.map((info: string) => `Clarify deliverable: ${info}`),
         ...(vendorQuote.extraCharges.length > 0
           ? [`Confirm all possible extra charges in writing: ${vendorQuote.extraCharges.join(', ')}`]
           : ['Are there any fuel, overtime, royalty, or corkage surcharges?']),

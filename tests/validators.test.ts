@@ -1,135 +1,77 @@
-/**
- * Tests for input validation schemas.
- */
-
 import { describe, it, expect } from 'vitest';
-import { IntakeRequestSchema, VendorQuoteRequestSchema } from '@/lib/schemas';
+import { XRayRequestSchema } from '@/lib/schemas';
 
-describe('IntakeRequestSchema', () => {
-  const validInput = {
-    occasion: 'wedding',
-    budget: 800000,
-    guestCount: 200,
-    city: 'Mumbai',
-    eventDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    style: 'traditional',
-    priorities: ['food', 'venue', 'photography'],
-    mustHaves: 'Live band',
-    culturalNotes: 'North Indian wedding',
+describe('XRayRequestSchema Validation', () => {
+  const validRequest = {
+    quoteText: 'Shree Ganesh Caterers: Grand Wedding Package for 250 guests at ₹1,100 per plate with welcome drinks.',
+    vendorType: 'caterer',
+    guestCount: 250,
+    totalBudget: 1000000,
     language: 'en',
   };
 
-  it('accepts valid input', () => {
-    const result = IntakeRequestSchema.safeParse(validInput);
+  it('accepts valid quote request', () => {
+    const result = XRayRequestSchema.safeParse(validRequest);
     expect(result.success).toBe(true);
   });
 
-  it('rejects zero budget', () => {
-    const result = IntakeRequestSchema.safeParse({ ...validInput, budget: 0 });
+  it('rejects quote text under 20 characters', () => {
+    const result = XRayRequestSchema.safeParse({
+      ...validRequest,
+      quoteText: 'Too short',
+    });
     expect(result.success).toBe(false);
   });
 
-  it('rejects negative budget', () => {
-    const result = IntakeRequestSchema.safeParse({ ...validInput, budget: -1000 });
+  it('rejects quote text exceeding 8,000 characters', () => {
+    const result = XRayRequestSchema.safeParse({
+      ...validRequest,
+      quoteText: 'A'.repeat(8001),
+    });
     expect(result.success).toBe(false);
   });
 
   it('rejects guest count of 0', () => {
-    const result = IntakeRequestSchema.safeParse({ ...validInput, guestCount: 0 });
-    expect(result.success).toBe(false);
-  });
-
-  it('rejects guest count above 5000', () => {
-    const result = IntakeRequestSchema.safeParse({ ...validInput, guestCount: 5001 });
-    expect(result.success).toBe(false);
-  });
-
-  it('rejects past date', () => {
-    const result = IntakeRequestSchema.safeParse({
-      ...validInput,
-      eventDate: '2020-01-01',
+    const result = XRayRequestSchema.safeParse({
+      ...validRequest,
+      guestCount: 0,
     });
     expect(result.success).toBe(false);
   });
 
-  it('rejects empty city', () => {
-    const result = IntakeRequestSchema.safeParse({ ...validInput, city: '' });
-    expect(result.success).toBe(false);
-  });
-
-  it('rejects city over 100 chars', () => {
-    const result = IntakeRequestSchema.safeParse({
-      ...validInput,
-      city: 'A'.repeat(101),
+  it('rejects guest count over 5000', () => {
+    const result = XRayRequestSchema.safeParse({
+      ...validRequest,
+      guestCount: 5001,
     });
     expect(result.success).toBe(false);
   });
 
-  it('strips HTML from city', () => {
-    const result = IntakeRequestSchema.safeParse({
-      ...validInput,
-      city: '<script>alert("xss")</script>Mumbai',
+  it('strips unsafe HTML tags from raw input', () => {
+    const result = XRayRequestSchema.safeParse({
+      ...validRequest,
+      quoteText: '<script>alert("hack")</script>Catering quote with 250 guests at 1100 per plate with sweet counter.',
     });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.city).toBe('alert("xss")Mumbai');
+      expect(result.data.quoteText).not.toContain('<script>');
     }
   });
 
-  it('rejects empty priorities', () => {
-    const result = IntakeRequestSchema.safeParse({ ...validInput, priorities: [] });
-    expect(result.success).toBe(false);
-  });
-
-  it('rejects invalid occasion type', () => {
-    const result = IntakeRequestSchema.safeParse({
-      ...validInput,
-      occasion: 'concert',
+  it('rejects invalid vendor type', () => {
+    const result = XRayRequestSchema.safeParse({
+      ...validRequest,
+      vendorType: 'magician',
     });
     expect(result.success).toBe(false);
   });
 
-  it('rejects mustHaves over 2000 chars', () => {
-    const result = IntakeRequestSchema.safeParse({
-      ...validInput,
-      mustHaves: 'A'.repeat(2001),
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it('defaults language to en', () => {
-    const { language, ...rest } = validInput;
-    const result = IntakeRequestSchema.safeParse(rest);
+  it('defaults language to en if unspecified', () => {
+    const { language, ...rest } = validRequest;
+    const result = XRayRequestSchema.safeParse(rest);
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.language).toBe('en');
     }
-  });
-});
-
-describe('VendorQuoteRequestSchema', () => {
-  it('rejects quotes with text over 8000 chars', () => {
-    const result = VendorQuoteRequestSchema.safeParse({
-      quotes: [{ text: 'A'.repeat(8001) }],
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it('rejects empty quotes array', () => {
-    const result = VendorQuoteRequestSchema.safeParse({ quotes: [] });
-    expect(result.success).toBe(false);
-  });
-
-  it('rejects more than 5 quotes', () => {
-    const quotes = Array(6).fill({ text: 'Some quote text' });
-    const result = VendorQuoteRequestSchema.safeParse({ quotes });
-    expect(result.success).toBe(false);
-  });
-
-  it('accepts valid vendor quote', () => {
-    const result = VendorQuoteRequestSchema.safeParse({
-      quotes: [{ text: 'Catering quote for 200 guests at ₹800 per plate', vendorType: 'caterer' }],
-    });
-    expect(result.success).toBe(true);
   });
 });

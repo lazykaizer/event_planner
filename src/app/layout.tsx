@@ -2,15 +2,16 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Shaadi Guardian — AI Celebration & Wedding Financial Advisor',
+  title: 'Quote X-Ray — Decode Wedding & Event Vendor Quotes Before Paying Advances',
   description:
-    'Plan Indian weddings and celebrations within your true budget (₹2L - ₹25L). Smart intake, deterministic budget splits, What-If simulator, and vendor red-flag protection.',
+    'Don’t pay the advance until you’ve X-Rayed the quote. Spot hidden costs, compute true all-in cost with live guest slider, detect predatory contract terms, and generate polite WhatsApp negotiation messages.',
   keywords: [
-    'Indian wedding planner',
-    'wedding budget calculator',
-    'shaadi planner',
-    'event budget breakdown',
-    'vendor red flags',
+    'Quote X-Ray',
+    'wedding vendor quotes',
+    'caterer quote calculator',
+    'hidden wedding costs',
+    'wedding vendor red flags',
+    'Indian wedding advance protection',
   ],
 };
 

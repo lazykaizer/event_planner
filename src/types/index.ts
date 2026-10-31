@@ -1,14 +1,114 @@
 /**
- * Core domain types for Shaadi Guardian.
- *
- * These types describe the application's data model: user intake, budget plans,
- * vendor quotes, timeline tasks, and what-if scenarios. They are intentionally
- * decoupled from the AI response schemas (see /lib/schemas.ts) so that
- * AI output is validated and mapped, never passed through raw.
+ * Core domain types for "Quote X-Ray" & Event Planning.
  */
 
 /* ------------------------------------------------------------------ */
-/*  Enums & Literals                                                  */
+/*  Quote X-Ray Core Domain Types                                     */
+/* ------------------------------------------------------------------ */
+
+export type VendorType = 'caterer' | 'decorator' | 'venue' | 'photographer' | 'other';
+export type RiskLevel = 'low' | 'medium' | 'high';
+export type Language = 'en' | 'hi';
+
+/** Detailed item or line-item extracted from quote */
+export interface QuoteItem {
+  name: string;
+  category?: string;
+  included: boolean;
+  notes?: string;
+}
+
+/** Raw extracted data from AI */
+export interface ExtractedQuote {
+  vendorName: string;
+  vendorType: VendorType;
+  /** Per-plate or per-unit rate in INR (if applicable) */
+  perUnitPrice: number | null;
+  unitType: string; // e.g. "per plate", "per day", "per hour"
+  /** Baseline guest count mentioned in quote, if any */
+  baseGuests: number | null;
+  /** Fixed lump sum charges (e.g. venue hall rental, sound system setup) */
+  fixedCharges: number;
+  fixedChargesBreakdown: { name: string; amount: number }[];
+  /** Extra charges mentioned with definite numbers */
+  extraCharges: { name: string; amount: number }[];
+  /** Percentage tax mentioned (e.g. 5% GST, 18% GST), null if not stated or included */
+  taxPercentage: number | null;
+  taxAmountStated: number | null;
+  taxIncludedInBase: boolean;
+  /** Advance requested */
+  advanceRequested: number | null;
+  advancePercentage: number | null;
+  /** Cancellation and refund policies */
+  cancellationTerms: string;
+  paymentMode: string; // e.g. "Cash only", "Bank transfer", "Personal UPI"
+  /** Written contract mentioned? */
+  writtenAgreementMentioned: boolean;
+  /** Deliverables explicitly included */
+  included: string[];
+  /** Deliverables explicitly NOT included */
+  notIncluded: string[];
+  /** Ambiguous or vague terms (e.g., "extra as per actuals", "generator fuel extra") */
+  ambiguities: string[];
+  /** Likely missing hidden charges that the user should be aware of */
+  potentialHiddenCosts: string[];
+}
+
+/** Deterministic True Cost Calculation result */
+export interface TrueCostCalculation {
+  guestCount: number;
+  perGuestComponent: number; // perUnitPrice * guestCount
+  fixedComponent: number;    // fixedCharges + fixed extras
+  taxesComponent: number;    // calculated tax amount
+  contingencyComponent: number; // estimated allowance for ambiguous extras
+  totalTrueCost: number;     // perGuestComponent + fixedComponent + taxesComponent
+  totalCostWithContingency: number;
+  formulaDescription: string;
+  hasAmbiguities: boolean;
+  estimatedCostRange: {
+    min: number;
+    max: number;
+  };
+}
+
+/** Individual Red-Flag item */
+export interface RedFlag {
+  ruleId: string;
+  severity: RiskLevel;
+  title: string;
+  message: string;
+  source: 'rule' | 'ai';
+}
+
+/** Full Analyzed Quote Report */
+export interface QuoteAnalysisReport {
+  id: string;
+  createdAt: string;
+  rawQuoteText: string;
+  selectedVendorType: VendorType;
+  guestCount: number;
+  extracted: ExtractedQuote;
+  trueCost: TrueCostCalculation;
+  redFlags: RedFlag[];
+  overallRisk: RiskLevel;
+  saferPaymentPlan: string[];
+  getInWritingChecklist: string[];
+  questionsToAsk: string[];
+  whatsappNegotiationMessage: {
+    english: string;
+    hinglish: string;
+    hindi: string;
+  };
+}
+
+/** Supporting Budget Context */
+export interface SupportingBudgetPlan {
+  totalBudget: number;
+  guestCount: number;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Supporting / Shared Event & Budget Types                          */
 /* ------------------------------------------------------------------ */
 
 export type OccasionType =
@@ -20,11 +120,6 @@ export type OccasionType =
 
 export type StylePreference = 'intimate' | 'traditional' | 'grand';
 
-export type Language = 'en' | 'hi';
-
-export type RiskLevel = 'low' | 'medium' | 'high';
-
-/** Budget categories – order matters for UI display. */
 export const BUDGET_CATEGORIES = [
   'venue',
   'catering',
@@ -40,7 +135,6 @@ export const BUDGET_CATEGORIES = [
 
 export type BudgetCategory = (typeof BUDGET_CATEGORIES)[number];
 
-/** Human-readable labels for each budget category. */
 export const CATEGORY_LABELS: Record<BudgetCategory, { en: string; hi: string }> = {
   venue:              { en: 'Venue',               hi: 'स्थान' },
   catering:           { en: 'Catering',            hi: 'खानपान' },
@@ -54,7 +148,6 @@ export const CATEGORY_LABELS: Record<BudgetCategory, { en: string; hi: string }>
   misc:               { en: 'Miscellaneous',       hi: 'विविध' },
 };
 
-/** Priority items the user can rank. */
 export const PRIORITY_ITEMS = [
   'food',
   'decoration',
@@ -66,70 +159,33 @@ export const PRIORITY_ITEMS = [
 
 export type PriorityItem = (typeof PRIORITY_ITEMS)[number];
 
-/* ------------------------------------------------------------------ */
-/*  User Intake                                                       */
-/* ------------------------------------------------------------------ */
-
 export interface UserIntake {
   occasion: OccasionType;
-  /** Total budget in INR (positive integer). */
   budget: number;
-  /** Number of guests (1–5000). */
   guestCount: number;
-  /** City name, trimmed, 1-100 chars. */
   city: string;
-  /** Event date — ISO-8601 string, must be today or later. */
   eventDate: string;
   style: StylePreference;
-  /** Ordered list: index 0 = highest priority. */
   priorities: PriorityItem[];
-  /** Optional free-text must-haves. Max 2000 chars. */
   mustHaves?: string;
-  /** Optional cultural notes. Max 2000 chars. */
   culturalNotes?: string;
-  /** UI language preference. */
   language: Language;
 }
 
-/* ------------------------------------------------------------------ */
-/*  Budget Plan                                                       */
-/* ------------------------------------------------------------------ */
-
 export interface BudgetAllocation {
   category: BudgetCategory;
-  /** Percentage (0–100). All percentages must sum to 100. */
   percentage: number;
-  /** Amount in INR — computed by code, not AI. */
   amount: number;
-  /** AI-provided one-line reasoning. */
   reasoning: string;
-  /** Whether the user has manually overridden this amount. */
   isManualOverride: boolean;
 }
 
 export interface BudgetPlan {
   totalBudget: number;
   allocations: BudgetAllocation[];
-  /** AI-provided summary text. */
   summary: string;
-  /** Timestamp when this plan was created / last revised. */
   createdAt: string;
-  /** Version counter. Incremented on every what-if revision. */
   version: number;
-}
-
-/* ------------------------------------------------------------------ */
-/*  What-If                                                           */
-/* ------------------------------------------------------------------ */
-
-export interface WhatIfDelta {
-  /** Natural-language description of the change. */
-  description: string;
-  /** Parsed structured change from AI. */
-  budgetMultiplier?: number;
-  newGuestCount?: number;
-  newEventDate?: string;
-  categoryAdjustments?: Partial<Record<BudgetCategory, number>>;
 }
 
 export interface WhatIfOption {
@@ -151,17 +207,6 @@ export interface PlanHistoryEntry {
   timestamp: string;
 }
 
-/* ------------------------------------------------------------------ */
-/*  Vendor                                                            */
-/* ------------------------------------------------------------------ */
-
-export type VendorType =
-  | 'caterer'
-  | 'decorator'
-  | 'photographer'
-  | 'venue'
-  | 'other';
-
 export interface VendorQuoteParsed {
   vendorName: string;
   vendorType: VendorType;
@@ -178,12 +223,7 @@ export interface VendorQuoteParsed {
   missingInfo: string[];
 }
 
-export interface VendorRedFlag {
-  ruleId: string;
-  severity: RiskLevel;
-  message: string;
-  source: 'rule' | 'ai';
-}
+export type VendorRedFlag = RedFlag;
 
 export interface VendorAnalysis {
   quote: VendorQuoteParsed;
@@ -194,36 +234,22 @@ export interface VendorAnalysis {
   getInWriting: string[];
 }
 
-/* ------------------------------------------------------------------ */
-/*  Timeline                                                          */
-/* ------------------------------------------------------------------ */
-
 export interface TimelineTask {
   id: string;
   title: string;
   description: string;
-  /** ISO-8601 date string for the deadline. */
   deadline: string;
-  /** IDs of tasks this depends on. */
   dependsOn: string[];
-  /** Whether the user marked this complete. */
   completed: boolean;
-  /** Whether the user marked this delayed. */
   delayed: boolean;
-  /** Whether downstream recalc shows this task at risk. */
   atRisk: boolean;
   category: BudgetCategory | 'general';
 }
 
 export interface Timeline {
   tasks: TimelineTask[];
-  /** AI note on what to do next when a task is delayed. */
   aiNote?: string;
 }
-
-/* ------------------------------------------------------------------ */
-/*  App State (persisted to localStorage)                             */
-/* ------------------------------------------------------------------ */
 
 export interface AppState {
   intake: UserIntake | null;
