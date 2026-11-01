@@ -14,5 +14,10 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     include: ['tests/**/*.test.{ts,tsx}'],
+    server: {
+      deps: {
+        inline: ['@google/generative-ai'],
+      },
+    },
   },
 });

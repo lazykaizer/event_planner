@@ -168,7 +168,11 @@ export function SummaryPrintView({
                       <span className="font-semibold text-red-800 text-[11px]">Flagged Risks:</span>
                       <ul className="list-disc list-inside text-red-700 space-y-0.5 text-[11px]">
                         {va.redFlags.map((f, fi) => (
-                          <li key={fi}>{f.message}</li>
+                          <li key={fi}>
+                            {typeof f.message === 'object' && f.message !== null
+                              ? f.message[language] || f.message.en
+                              : f.message}
+                          </li>
                         ))}
                       </ul>
                     </div>

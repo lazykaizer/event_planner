@@ -288,7 +288,9 @@ export function VendorChecker({
                               <span className="font-bold mr-1">
                                 [{flag.source === 'rule' ? 'Deterministic Rule' : 'AI Scan'}]:
                               </span>
-                              {flag.message}
+                              {typeof flag.message === 'object' && flag.message !== null
+                                ? flag.message[language] || flag.message.en
+                                : flag.message}
                             </div>
                           ))}
                         </div>
@@ -329,12 +331,18 @@ export function VendorChecker({
                         <span>{language === 'hi' ? 'सुरक्षित भुगतान अनुसूची परामर्श:' : 'Safer Payment Schedule:'}</span>
                       </span>
                       <ul className="space-y-1 text-gray-700">
-                        {analysis.saferPaymentSchedule.map((sched, sIdx) => (
-                          <li key={sIdx} className="flex items-start gap-1.5">
-                            <span className="text-saffron-700 shrink-0 font-bold">•</span>
-                            <span>{sched}</span>
-                          </li>
-                        ))}
+                        {analysis.saferPaymentSchedule.map((sched, sIdx) => {
+                          const schedText =
+                            typeof sched === 'object' && sched !== null
+                              ? sched[language] || sched.en
+                              : sched;
+                          return (
+                            <li key={sIdx} className="flex items-start gap-1.5">
+                              <span className="text-saffron-700 shrink-0 font-bold">•</span>
+                              <span>{schedText}</span>
+                            </li>
+                          );
+                        })}
                       </ul>
                     </div>
 
@@ -358,9 +366,13 @@ export function VendorChecker({
                           <span className="group-open:rotate-180 transition-transform">▼</span>
                         </summary>
                         <ul className="list-disc list-inside mt-2 space-y-1 text-gray-600 pl-1">
-                          {analysis.getInWriting.map((item, iIdx) => (
-                            <li key={iIdx}>{item}</li>
-                          ))}
+                          {analysis.getInWriting.map((item, iIdx) => {
+                            const itemText =
+                              typeof item === 'object' && item !== null
+                                ? item[language] || item.en
+                                : item;
+                            return <li key={iIdx}>{itemText}</li>;
+                          })}
                         </ul>
                       </details>
                     </div>

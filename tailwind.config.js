@@ -17,8 +17,30 @@ module.exports = {
           600: '#cc2952',
           700: '#a91d42',
           800: '#8b1a3b',
-          900: '#6b1530',  /* deep maroon primary */
-          950: '#400a1a',
+          900: '#7A1634',  /* maroon */
+          950: '#4A0D22',  /* deep maroon ink */
+        },
+        ink: '#4A0D22',
+        marigold: {
+          DEFAULT: '#FF9F1C',
+          light: '#FFC857',
+          dark: '#E0850B',
+        },
+        gold: {
+          antique: '#C9962B',
+          light: '#E5B955',
+        },
+        sand: {
+          warm: '#F3E6CC',
+          light: '#FAF3E5',
+        },
+        teal: {
+          peacock: '#0E7C7B',
+          light: '#E2F3F2',
+        },
+        danger: {
+          DEFAULT: '#C62839',
+          light: '#FDECEE',
         },
         saffron: {
           50: '#fff8ed',
@@ -26,7 +48,7 @@ module.exports = {
           200: '#ffd9a8',
           300: '#ffbe71',
           400: '#ff9838',
-          500: '#ff7b11',
+          500: '#FF9F1C', /* mapped to marigold */
           600: '#f06006',
           700: '#c74807',
           800: '#9e390e',
@@ -34,22 +56,23 @@ module.exports = {
           950: '#451605',
         },
         cream: {
-          50: '#fefdfb',
-          100: '#fdf8f0',
-          200: '#faf0de',
-          300: '#f5e3c5',
-          400: '#efd1a3',
-          500: '#e7bb7f',
-          600: '#dca05c',
-          700: '#cc8643',
-          800: '#a66c38',
-          900: '#875930',
-          950: '#482d17',
+          50: '#FFF7E8',  /* page background */
+          100: '#FDF3E0',
+          200: '#F3E6CC', /* warm sand */
+          300: '#ECD8B5',
+          400: '#E1C493',
+          500: '#D4AF72',
+          600: '#C29853',
+          700: '#A67E39',
+          800: '#85632A',
+          900: '#64481C',
+          950: '#38260C',
         },
       },
       fontFamily: {
         heading: ['Playfair Display', 'Georgia', 'serif'],
-        body: ['Inter', 'system-ui', 'sans-serif'],
+        body: ['Inter', 'Noto Sans Devanagari', 'system-ui', 'sans-serif'],
+        hindi: ['Noto Sans Devanagari', 'Inter', 'system-ui', 'sans-serif'],
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-out',

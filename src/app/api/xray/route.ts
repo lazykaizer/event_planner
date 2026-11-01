@@ -10,7 +10,8 @@ import {
   generateSafePaymentSchedule,
   generateInWritingChecklist,
 } from '@/lib/redFlags';
-import type { QuoteAnalysisReport, RedFlag } from '@/types';
+import { verifyAllEvidence } from '@/lib/evidence';
+import type { QuoteAnalysisReport, RedFlag, ExtractedQuote } from '@/types';
 
 export async function POST(req: NextRequest) {
   try {
@@ -41,21 +42,51 @@ export async function POST(req: NextRequest) {
 
     // 3. Generate prompt & call Gemini with JSON schema enforcement
     const { system, prompt } = buildQuoteXRayPrompt(validReq);
-    const rawAiResponse = await callGeminiJSON(prompt, system);
+    let rawAiResponse = await callGeminiJSON(prompt, system);
 
-    // 4. Validate AI response with Zod
-    const aiValidated = AIQuoteExtractionSchema.safeParse(rawAiResponse);
+    // 4. Validate AI response with Zod (retry ONCE on schema invalidity)
+    let aiValidated = AIQuoteExtractionSchema.safeParse(rawAiResponse);
+    if (!aiValidated.success) {
+      const errorSummary = aiValidated.error.issues
+        .map((iss) => `${iss.path.join('.') || 'root'}: ${iss.message}`)
+        .join('; ');
+      const retryPrompt = `${prompt}\n\nYour previous output was invalid: ${errorSummary}. Return corrected JSON only.`;
+
+      try {
+        rawAiResponse = await callGeminiJSON(retryPrompt, system);
+        aiValidated = AIQuoteExtractionSchema.safeParse(rawAiResponse);
+      } catch {
+        // If retry call fails, aiValidated remains unsuccessful
+      }
+    }
+
     if (!aiValidated.success) {
       return NextResponse.json(
         {
-          error: 'AI generated an invalid quote extraction structure. Please retry.',
+          error:
+            'We could not reliably extract structured data from this quote. Please check the quote and try again.',
           details: aiValidated.error.flatten(),
         },
         { status: 502 }
       );
     }
 
-    const extracted = aiValidated.data;
+    const rawExtracted = aiValidated.data;
+
+    // 4b. Verify AI Evidence snippets against raw quote text
+    const verifiedEvidence = verifyAllEvidence(rawExtracted.evidence, validReq.quoteText);
+    const extracted: ExtractedQuote = {
+      ...rawExtracted,
+      evidence: {
+        perUnitPrice: verifiedEvidence.perUnitPrice?.snippet ?? null,
+        fixedCharges: verifiedEvidence.fixedCharges?.snippet ?? null,
+        advance: verifiedEvidence.advance?.snippet ?? null,
+        taxes: verifiedEvidence.taxes?.snippet ?? null,
+        paymentMode: verifiedEvidence.paymentMode?.snippet ?? null,
+        cancellationTerms: verifiedEvidence.cancellationTerms?.snippet ?? null,
+      },
+      verifiedEvidence,
+    };
 
     // 5. DETERMINISTIC COST CALCULATION (Strictly in code, never by AI)
     const trueCost = calculateTrueCost(extracted, validReq.guestCount);
@@ -98,12 +129,13 @@ export async function POST(req: NextRequest) {
       saferPaymentPlan,
       getInWritingChecklist,
       questionsToAsk,
-      whatsappNegotiationMessage: extracted.whatsappMessages,
+      whatsappNegotiationMessage: rawExtracted.whatsappMessages,
     };
 
     return NextResponse.json({ success: true, report });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Internal server error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    const rawMessage = error instanceof Error ? error.message : 'Internal server error';
+    const sanitized = rawMessage.replace(/GEMINI_API_KEY/gi, 'API key');
+    return NextResponse.json({ error: sanitized }, { status: 500 });
   }
 }

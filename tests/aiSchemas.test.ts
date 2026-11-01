@@ -87,6 +87,27 @@ describe('AIQuoteExtractionSchema Validation', () => {
       expect(result.data.included).toEqual([]);
       expect(result.data.notIncluded).toEqual([]);
       expect(result.data.ambiguities).toEqual([]);
+      expect(result.data.evidence).toEqual({});
+    }
+  });
+
+  it('correctly parses evidence snippets in AI output', () => {
+    const withEvidence = {
+      ...validAIResponse,
+      evidence: {
+        perUnitPrice: '1100 per plate',
+        fixedCharges: 'setup charges 15000',
+        advance: '35% advance',
+        taxes: '5% gst',
+        paymentMode: 'cash',
+        cancellationTerms: '50% forfeit',
+      },
+    };
+    const result = AIQuoteExtractionSchema.safeParse(withEvidence);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.evidence?.perUnitPrice).toBe('1100 per plate');
+      expect(result.data.evidence?.advance).toBe('35% advance');
     }
   });
 });

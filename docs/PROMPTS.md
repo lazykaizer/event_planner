@@ -33,7 +33,9 @@ Each message asks the missing questions, requests an official written itemized c
 - **Version History:**
   - **v1.0 (Initial Prototype):** Asked the model to calculate the final total bill directly. *Failure:* In tests with 250 guests and 5% tax, the LLM hallucinated totals differing by ₹5,000–₹15,000 due to token generation rounding.
   - **v1.1:** Shifted arithmetic completely to TypeScript (`calculateTrueCost`). The prompt now extracts line-item rates (`perUnitPrice`, `fixedCharges`, `taxPercentage`), enabling deterministic math in code.
-  - **v2.0 (Current):** Added extraction of `ambiguities` (e.g., *"diesel as per actuals"*) and `potentialHiddenCosts` (e.g., overtime, tips, breakage fees). Added trilingual WhatsApp negotiation message generation (`english`, `hinglish`, `hindi`).
+  - **v2.0:** Added extraction of `ambiguities` (e.g., *"diesel as per actuals"*) and `potentialHiddenCosts` (e.g., overtime, tips, breakage fees). Added trilingual WhatsApp negotiation message generation (`english`, `hinglish`, `hindi`).
+  - **v2.1 (Current):** Added verbatim evidence snippets for 6 key contract fields (`perUnitPrice`, `fixedCharges`, `advance`, `taxes`, `paymentMode`, `cancellationTerms`).
+    - *Rationale (Why):* To reduce silent misreading and hallucination of contract clauses. Large language models can misattribute numbers or assume standard defaults when quotes are ambiguous. By demanding short (max 120 chars) verbatim text evidence and verifying via deterministic code string-matching against the raw input, the system catches and flags ungrounded claims with `"Could not verify from your text"`.
 
 ---
 
@@ -66,6 +68,14 @@ The prompt strictly enforces the `AIQuoteExtractionSchema` (validated with Zod):
     "english": "string",
     "hinglish": "string",
     "hindi": "string"
+  },
+  "evidence": {
+    "perUnitPrice": "string | null",
+    "fixedCharges": "string | null",
+    "advance": "string | null",
+    "taxes": "string | null",
+    "paymentMode": "string | null",
+    "cancellationTerms": "string | null"
   }
 }
 ```

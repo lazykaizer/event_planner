@@ -67,9 +67,18 @@ export function TrueCostCard({ trueCost, quote, language }: TrueCostCardProps) {
           <span className="text-base font-bold text-gray-900 block mt-0.5">
             {formatINR(trueCost.perGuestComponent)}
           </span>
-          <span className="text-[10px] text-gray-400">
+          <span className="text-[10px] text-gray-400 block">
             {quote.perUnitPrice ? `${formatINR(quote.perUnitPrice)} × ${trueCost.guestCount}` : 'Flat fee'}
           </span>
+          {quote.evidence?.perUnitPrice && (
+            <div className="mt-1.5 pt-1.5 border-t border-cream-100 text-[11px] text-gray-500 italic">
+              {quote.evidence.perUnitPrice === 'Could not verify from your text' ? (
+                <span className="text-amber-700 font-medium not-italic">⚠️ Could not verify from your text</span>
+              ) : (
+                <span>From your quote: &ldquo;{quote.evidence.perUnitPrice}&rdquo;</span>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="p-3 rounded-lg bg-white border border-cream-200">
@@ -79,9 +88,18 @@ export function TrueCostCard({ trueCost, quote, language }: TrueCostCardProps) {
           <span className="text-base font-bold text-gray-900 block mt-0.5">
             {formatINR(trueCost.fixedComponent)}
           </span>
-          <span className="text-[10px] text-gray-400">
+          <span className="text-[10px] text-gray-400 block">
             {quote.fixedChargesBreakdown.length + quote.extraCharges.length} {language === 'hi' ? 'मदें शामिल' : 'line items'}
           </span>
+          {quote.evidence?.fixedCharges && (
+            <div className="mt-1.5 pt-1.5 border-t border-cream-100 text-[11px] text-gray-500 italic">
+              {quote.evidence.fixedCharges === 'Could not verify from your text' ? (
+                <span className="text-amber-700 font-medium not-italic">⚠️ Could not verify from your text</span>
+              ) : (
+                <span>From your quote: &ldquo;{quote.evidence.fixedCharges}&rdquo;</span>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="p-3 rounded-lg bg-white border border-cream-200">
@@ -91,9 +109,18 @@ export function TrueCostCard({ trueCost, quote, language }: TrueCostCardProps) {
           <span className="text-base font-bold text-gray-900 block mt-0.5">
             {formatINR(trueCost.taxesComponent)}
           </span>
-          <span className="text-[10px] text-gray-400">
+          <span className="text-[10px] text-gray-400 block">
             {quote.taxPercentage ? `${quote.taxPercentage}% GST` : quote.taxIncludedInBase ? 'Included in base' : 'Not stated'}
           </span>
+          {quote.evidence?.taxes && (
+            <div className="mt-1.5 pt-1.5 border-t border-cream-100 text-[11px] text-gray-500 italic">
+              {quote.evidence.taxes === 'Could not verify from your text' ? (
+                <span className="text-amber-700 font-medium not-italic">⚠️ Could not verify from your text</span>
+              ) : (
+                <span>From your quote: &ldquo;{quote.evidence.taxes}&rdquo;</span>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

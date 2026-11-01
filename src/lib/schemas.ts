@@ -88,6 +88,16 @@ export const AIQuoteExtractionSchema = z.object({
     hinglish: z.string().min(1),
     hindi: z.string().min(1),
   }),
+  evidence: z
+    .object({
+      perUnitPrice: z.string().max(120).nullable().optional(),
+      fixedCharges: z.string().max(120).nullable().optional(),
+      advance: z.string().max(120).nullable().optional(),
+      taxes: z.string().max(120).nullable().optional(),
+      paymentMode: z.string().max(120).nullable().optional(),
+      cancellationTerms: z.string().max(120).nullable().optional(),
+    })
+    .default({}),
 });
 
 export type AIQuoteExtraction = z.infer<typeof AIQuoteExtractionSchema>;

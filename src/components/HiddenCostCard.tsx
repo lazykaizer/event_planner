@@ -82,6 +82,80 @@ export function HiddenCostCard({ quote, language }: HiddenCostCardProps) {
         </div>
       )}
 
+      {/* Contract Terms & Quote Evidence Snippets */}
+      <div className="space-y-2.5 pt-2 border-t border-cream-200">
+        <span className="text-xs font-bold uppercase tracking-wider text-gray-700 flex items-center gap-1.5">
+          <span>📜</span>
+          <span>
+            {language === 'hi'
+              ? 'अनुबंध की मुख्य शर्तें एवं प्रमाण (Quote Evidence):'
+              : 'Contract Terms & Quote Evidence Snippets:'}
+          </span>
+        </span>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+          {/* Advance */}
+          <div className="p-3 rounded-lg bg-cream-50 border border-cream-200">
+            <span className="text-gray-500 block text-[11px]">
+              {language === 'hi' ? 'मांगा गया एडवांस' : 'Advance Requested'}
+            </span>
+            <span className="text-sm font-bold text-gray-900 block mt-0.5">
+              {quote.advancePercentage
+                ? `${quote.advancePercentage}%`
+                : quote.advanceRequested
+                ? `₹${quote.advanceRequested.toLocaleString('en-IN')}`
+                : 'Not specified'}
+            </span>
+            {quote.evidence?.advance && (
+              <div className="mt-1.5 pt-1.5 border-t border-cream-200 text-[11px] text-gray-600 italic">
+                {quote.evidence.advance === 'Could not verify from your text' ? (
+                  <span className="text-amber-700 font-medium not-italic">⚠️ Could not verify from your text</span>
+                ) : (
+                  <span>From your quote: &ldquo;{quote.evidence.advance}&rdquo;</span>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Payment Mode */}
+          <div className="p-3 rounded-lg bg-cream-50 border border-cream-200">
+            <span className="text-gray-500 block text-[11px]">
+              {language === 'hi' ? 'भुगतान का तरीका' : 'Payment Mode'}
+            </span>
+            <span className="text-sm font-bold text-gray-900 block mt-0.5">
+              {quote.paymentMode || 'Not specified'}
+            </span>
+            {quote.evidence?.paymentMode && (
+              <div className="mt-1.5 pt-1.5 border-t border-cream-200 text-[11px] text-gray-600 italic">
+                {quote.evidence.paymentMode === 'Could not verify from your text' ? (
+                  <span className="text-amber-700 font-medium not-italic">⚠️ Could not verify from your text</span>
+                ) : (
+                  <span>From your quote: &ldquo;{quote.evidence.paymentMode}&rdquo;</span>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Cancellation Terms */}
+          <div className="p-3 rounded-lg bg-cream-50 border border-cream-200">
+            <span className="text-gray-500 block text-[11px]">
+              {language === 'hi' ? 'रद्दीकरण / रिफंड नियम' : 'Cancellation Terms'}
+            </span>
+            <span className="text-sm font-bold text-gray-900 block mt-0.5 truncate" title={quote.cancellationTerms}>
+              {quote.cancellationTerms || 'Not mentioned'}
+            </span>
+            {quote.evidence?.cancellationTerms && (
+              <div className="mt-1.5 pt-1.5 border-t border-cream-200 text-[11px] text-gray-600 italic">
+                {quote.evidence.cancellationTerms === 'Could not verify from your text' ? (
+                  <span className="text-amber-700 font-medium not-italic">⚠️ Could not verify from your text</span>
+                ) : (
+                  <span>From your quote: &ldquo;{quote.evidence.cancellationTerms}&rdquo;</span>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Explicit Deliverables: Included vs Excluded */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-cream-200 text-xs">
         <div className="p-3 rounded-xl bg-green-50/60 border border-green-200 space-y-1.5">

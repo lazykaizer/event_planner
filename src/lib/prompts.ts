@@ -60,6 +60,8 @@ EXTRACTION INSTRUCTIONS:
     - Ask for clarity on the ambiguous/hidden costs
     - Request a formal written itemized contract
     - Propose a safer milestone payment schedule (20% booking advance, milestone installments, 15% balance after satisfactory completion).
+15. Evidence Snippets:
+    For perUnitPrice, fixedCharges, advance, taxes, paymentMode, and cancellationTerms, return an "evidence" object containing short verbatim snippets copied directly from the user's quote text (max 120 chars each). If not mentioned in the quote, return null for that field.
 
 OUTPUT FORMAT:
 Return strictly a JSON object:
@@ -95,6 +97,14 @@ Return strictly a JSON object:
     "english": "...",
     "hinglish": "...",
     "hindi": "..."
+  },
+  "evidence": {
+    "perUnitPrice": "plate 1100 padega",
+    "fixedCharges": "stage setup 25000",
+    "advance": "advance 50% lagega",
+    "taxes": "5% GST extra",
+    "paymentMode": "cash only",
+    "cancellationTerms": null
   }
 }`;
 

@@ -5,6 +5,8 @@ import type { QuoteAnalysisReport, Language } from '@/types';
 import { formatINR } from '@/lib/formatters';
 import { EstimateBadge } from '@/components/EstimateBadge';
 
+import { computeComparisonRationales } from '@/lib/compareRationale';
+
 interface QuoteCompareViewProps {
   reports: QuoteAnalysisReport[];
   onRemoveReport: (id: string) => void;
@@ -20,30 +22,9 @@ export function QuoteCompareView({
 }: QuoteCompareViewProps) {
   if (reports.length === 0) return null;
 
-  // Identify Best Value (Lowest true cost among same guest count)
-  let bestValueId: string | null = null;
-  let minCost = Infinity;
-
-  // Identify Safest Option (Lowest risk, lowest advance percentage)
-  let safestOptionId: string | null = null;
-  let minRiskScore = Infinity;
-
-  reports.forEach((r) => {
-    if (r.trueCost.totalTrueCost < minCost) {
-      minCost = r.trueCost.totalTrueCost;
-      bestValueId = r.id;
-    }
-
-    // Risk points: low = 1, medium = 5, high = 10 + (advancePercentage || 50)
-    const riskScore =
-      (r.overallRisk === 'low' ? 1 : r.overallRisk === 'medium' ? 5 : 10) * 10 +
-      (r.extracted.advancePercentage || 40);
-
-    if (riskScore < minRiskScore) {
-      minRiskScore = riskScore;
-      safestOptionId = r.id;
-    }
-  });
+  const rationales = computeComparisonRationales(reports);
+  const bestValueId = rationales.bestValueId;
+  const safestOptionId = rationales.safestOptionId;
 
   return (
     <div className="card space-y-6 border-2 border-saffron-300 bg-white shadow-md">
@@ -68,6 +49,13 @@ export function QuoteCompareView({
           {reports.length} / 3 {language === 'hi' ? 'कोट्स विश्लेषित' : 'quotes analyzed'}
         </span>
       </div>
+
+      {/* Double Winner Banner */}
+      {rationales.combinedHighlight && (
+        <div className="p-3.5 rounded-xl bg-gradient-to-r from-amber-50 via-green-50 to-amber-50 border border-amber-300 text-xs text-amber-950 font-medium shadow-2xs">
+          {rationales.combinedHighlight}
+        </div>
+      )}
 
       {/* Side-by-Side Grid */}
       <div
@@ -120,6 +108,18 @@ export function QuoteCompareView({
                     <span className="text-xs text-gray-500 capitalize">
                       {r.selectedVendorType} • {r.guestCount} Pax
                     </span>
+
+                    {/* Explanatory Rationales */}
+                    {isBestValue && rationales.bestValueRationale && (
+                      <p className="mt-2 text-[11px] text-amber-900 bg-amber-50/80 p-2 rounded border border-amber-200 leading-tight">
+                        <strong>Why Best Value:</strong> {rationales.bestValueRationale}
+                      </p>
+                    )}
+                    {isSafest && rationales.safestRationale && (
+                      <p className="mt-2 text-[11px] text-green-900 bg-green-50/80 p-2 rounded border border-green-200 leading-tight">
+                        <strong>Why Safest:</strong> {rationales.safestRationale}
+                      </p>
+                    )}
                   </div>
 
                   <button

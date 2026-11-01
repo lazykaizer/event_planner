@@ -52,6 +52,38 @@ export interface ExtractedQuote {
   ambiguities: string[];
   /** Likely missing hidden charges that the user should be aware of */
   potentialHiddenCosts: string[];
+  /** Verbatim evidence snippets copied directly from raw quote */
+  evidence?: EvidenceSnippets;
+  /** Verification status for each evidence snippet */
+  verifiedEvidence?: {
+    perUnitPrice?: { verified: boolean; snippet: string };
+    fixedCharges?: { verified: boolean; snippet: string };
+    advance?: { verified: boolean; snippet: string };
+    taxes?: { verified: boolean; snippet: string };
+    paymentMode?: { verified: boolean; snippet: string };
+    cancellationTerms?: { verified: boolean; snippet: string };
+  };
+  /** Contextual red flags identified by AI */
+  aiFlags?: {
+    severity: RiskLevel;
+    title: string;
+    message: string;
+  }[];
+  /** Ready-to-copy WhatsApp negotiation messages */
+  whatsappMessages?: {
+    english: string;
+    hinglish: string;
+    hindi: string;
+  };
+}
+
+export interface EvidenceSnippets {
+  perUnitPrice?: string | null;
+  fixedCharges?: string | null;
+  advance?: string | null;
+  taxes?: string | null;
+  paymentMode?: string | null;
+  cancellationTerms?: string | null;
 }
 
 /** Deterministic True Cost Calculation result */
@@ -71,12 +103,17 @@ export interface TrueCostCalculation {
   };
 }
 
+export interface BilingualText {
+  en: string;
+  hi: string;
+}
+
 /** Individual Red-Flag item */
 export interface RedFlag {
   ruleId: string;
   severity: RiskLevel;
-  title: string;
-  message: string;
+  title: string | BilingualText;
+  message: string | BilingualText;
   source: 'rule' | 'ai';
 }
 
@@ -91,8 +128,8 @@ export interface QuoteAnalysisReport {
   trueCost: TrueCostCalculation;
   redFlags: RedFlag[];
   overallRisk: RiskLevel;
-  saferPaymentPlan: string[];
-  getInWritingChecklist: string[];
+  saferPaymentPlan: (string | BilingualText)[];
+  getInWritingChecklist: (string | BilingualText)[];
   questionsToAsk: string[];
   whatsappNegotiationMessage: {
     english: string;
@@ -229,9 +266,9 @@ export interface VendorAnalysis {
   quote: VendorQuoteParsed;
   redFlags: VendorRedFlag[];
   overallRisk: RiskLevel;
-  saferPaymentSchedule: string[];
+  saferPaymentSchedule: (string | BilingualText)[];
   questionsToAsk: string[];
-  getInWriting: string[];
+  getInWriting: (string | BilingualText)[];
 }
 
 export interface TimelineTask {

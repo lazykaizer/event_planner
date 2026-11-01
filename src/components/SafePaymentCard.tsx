@@ -1,11 +1,11 @@
 'use client';
 
 import React from 'react';
-import type { Language } from '@/types';
+import type { Language, BilingualText } from '@/types';
 
 interface SafePaymentCardProps {
-  saferPaymentPlan: string[];
-  getInWritingChecklist: string[];
+  saferPaymentPlan: (string | BilingualText)[];
+  getInWritingChecklist: (string | BilingualText)[];
   language: Language;
 }
 
@@ -45,14 +45,17 @@ export function SafePaymentCard({
         </span>
 
         <div className="space-y-2">
-          {saferPaymentPlan.map((step, idx) => (
-            <div key={idx} className="flex items-start gap-2.5 text-xs text-gray-800">
-              <span className="w-5 h-5 rounded-full bg-maroon-900 text-white font-bold flex items-center justify-center shrink-0 text-[11px] mt-0.5">
-                {idx + 1}
-              </span>
-              <span className="leading-relaxed">{step}</span>
-            </div>
-          ))}
+          {saferPaymentPlan.map((step, idx) => {
+            const stepText = typeof step === 'object' && step !== null ? step[language] || step.en : step;
+            return (
+              <div key={idx} className="flex items-start gap-2.5 text-xs text-gray-800">
+                <span className="w-5 h-5 rounded-full bg-maroon-900 text-white font-bold flex items-center justify-center shrink-0 text-[11px] mt-0.5">
+                  {idx + 1}
+                </span>
+                <span className="leading-relaxed">{stepText}</span>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -68,15 +71,18 @@ export function SafePaymentCard({
         </span>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-          {getInWritingChecklist.map((item, idx) => (
-            <div
-              key={idx}
-              className="p-2.5 rounded-lg bg-white border border-cream-300 flex items-start gap-2"
-            >
-              <span className="text-saffron-700 font-bold shrink-0">✓</span>
-              <span className="text-gray-700 leading-relaxed">{item}</span>
-            </div>
-          ))}
+          {getInWritingChecklist.map((item, idx) => {
+            const itemText = typeof item === 'object' && item !== null ? item[language] || item.en : item;
+            return (
+              <div
+                key={idx}
+                className="p-2.5 rounded-lg bg-white border border-cream-300 flex items-start gap-2"
+              >
+                <span className="text-saffron-700 font-bold shrink-0">✓</span>
+                <span className="text-gray-700 leading-relaxed">{itemText}</span>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

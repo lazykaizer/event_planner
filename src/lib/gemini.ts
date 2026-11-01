@@ -16,7 +16,7 @@ export function getGeminiClient(): GoogleGenerativeAI {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey || apiKey.trim() === '' || apiKey === 'your_gemini_api_key_here') {
     throw new Error(
-      'GEMINI_API_KEY is not configured. Please add your Google Gemini API key to .env.local.'
+      'AI service is not configured. Please check server environment settings.'
     );
   }
   return new GoogleGenerativeAI(apiKey);
@@ -68,6 +68,7 @@ export async function callGeminiJSON<T>(
       // If it's an API key error or quota error, do not retry
       if (
         lastError.message.includes('API_KEY_INVALID') ||
+        lastError.message.includes('AI service is not configured') ||
         lastError.message.includes('GEMINI_API_KEY is not configured')
       ) {
         throw lastError;

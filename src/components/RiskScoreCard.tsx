@@ -83,25 +83,42 @@ export function RiskScoreCard({ overallRisk, redFlags, language }: RiskScoreCard
               : `Flagged Vulnerabilities (${redFlags.length}):`}
           </span>
           <div className="space-y-2">
-            {redFlags.map((flag, idx) => (
-              <div
-                key={idx}
-                className={`p-3 rounded-xl border text-xs leading-relaxed ${
-                  flag.severity === 'high'
-                    ? 'bg-red-50 text-red-950 border-red-200'
-                    : 'bg-amber-50 text-amber-950 border-amber-200'
-                }`}
-              >
-                <div className="flex items-center gap-1.5 mb-1 font-bold">
-                  <span>{flag.severity === 'high' ? '🚨' : '⚠️'}</span>
-                  <span>{flag.title || flag.ruleId}</span>
-                  <span className="text-[10px] font-normal uppercase px-1.5 py-0.2 rounded bg-white/70 border border-black/10 ml-auto">
-                    {flag.source === 'rule' ? 'Deterministic Rule' : 'AI Context'}
-                  </span>
+            {redFlags.map((flag, idx) => {
+              const titleText =
+                typeof flag.title === 'object' && flag.title !== null
+                  ? flag.title[language] || flag.title.en
+                  : flag.title || flag.ruleId;
+              const messageText =
+                typeof flag.message === 'object' && flag.message !== null
+                  ? flag.message[language] || flag.message.en
+                  : flag.message;
+
+              return (
+                <div
+                  key={idx}
+                  className={`p-3 rounded-xl border text-xs leading-relaxed ${
+                    flag.severity === 'high'
+                      ? 'bg-red-50 text-red-950 border-red-200'
+                      : 'bg-amber-50 text-amber-950 border-amber-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 mb-1 font-bold">
+                    <span>{flag.severity === 'high' ? '🚨' : '⚠️'}</span>
+                    <span>{titleText}</span>
+                    <span className="text-[10px] font-normal uppercase px-1.5 py-0.2 rounded bg-white/70 border border-black/10 ml-auto">
+                      {flag.source === 'rule'
+                        ? language === 'hi'
+                          ? 'निश्चित कोड नियम'
+                          : 'Deterministic Rule'
+                        : language === 'hi'
+                        ? 'AI संदर्भ'
+                        : 'AI Context'}
+                    </span>
+                  </div>
+                  <p className="text-gray-700 pl-5">{messageText}</p>
                 </div>
-                <p className="text-gray-700 pl-5">{flag.message}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

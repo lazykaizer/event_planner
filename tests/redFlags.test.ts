@@ -104,7 +104,8 @@ describe('Red Flag Rules for Quote X-Ray', () => {
     const flags = checkRedFlags(quote);
     const flag = flags.find((f) => f.ruleId === 'no_refund_terms');
     expect(flag).toBeDefined();
-    expect(flag?.message).toContain('strict "No Refund" policy');
+    const msg = typeof flag?.message === 'object' ? flag.message.en : flag?.message;
+    expect(msg).toContain('strict "No Refund" policy');
   });
 
   it('Safe quote with contract and low advance produces Low Risk', () => {
@@ -117,5 +118,65 @@ describe('Red Flag Rules for Quote X-Ray', () => {
     const flags = checkRedFlags(quote);
     expect(flags.length).toBe(0);
     expect(computeOverallRisk(flags)).toBe('low');
+  });
+
+  it('verifies every rule and checklist item has non-empty en and hi strings', async () => {
+    const { RED_FLAG_RULES, COMMON_CHECKLIST_ITEMS, CATEGORY_CHECKLIST_ITEMS, STANDARD_SAFE_PAYMENT_SCHEDULE } = await import('@/lib/redFlags');
+
+    // 1. Verify every rule definition has non-empty en and hi title
+    for (const rule of RED_FLAG_RULES) {
+      expect(rule.id).toBeDefined();
+      expect(rule.title.en.trim().length).toBeGreaterThan(0);
+      expect(rule.title.hi.trim().length).toBeGreaterThan(0);
+    }
+
+    // 2. Verify triggered flags have non-empty bilingual title and message
+    const testQuote = createSampleQuote({
+      advancePercentage: 60,
+      paymentMode: 'Cash only',
+      writtenAgreementMentioned: false,
+      cancellationTerms: 'No refund',
+      included: ['Free venue lawn with catering'],
+      perUnitPrice: 1200,
+    });
+
+    const triggeredFlags = checkRedFlags(testQuote);
+    expect(triggeredFlags.length).toBeGreaterThan(0);
+
+    for (const flag of triggeredFlags) {
+      if (typeof flag.title === 'object') {
+        expect(flag.title.en.trim().length).toBeGreaterThan(0);
+        expect(flag.title.hi.trim().length).toBeGreaterThan(0);
+      } else {
+        expect(flag.title.trim().length).toBeGreaterThan(0);
+      }
+
+      if (typeof flag.message === 'object') {
+        expect(flag.message.en.trim().length).toBeGreaterThan(0);
+        expect(flag.message.hi.trim().length).toBeGreaterThan(0);
+      } else {
+        expect(flag.message.trim().length).toBeGreaterThan(0);
+      }
+    }
+
+    // 3. Verify checklist items have non-empty en and hi strings
+    for (const item of COMMON_CHECKLIST_ITEMS) {
+      expect(item.en.trim().length).toBeGreaterThan(0);
+      expect(item.hi.trim().length).toBeGreaterThan(0);
+    }
+
+    for (const [cat, items] of Object.entries(CATEGORY_CHECKLIST_ITEMS)) {
+      expect(items.length).toBeGreaterThan(0);
+      for (const item of items) {
+        expect(item.en.trim().length, `Category ${cat} en item is empty`).toBeGreaterThan(0);
+        expect(item.hi.trim().length, `Category ${cat} hi item is empty`).toBeGreaterThan(0);
+      }
+    }
+
+    // 4. Verify safe payment schedule has non-empty en and hi strings
+    for (const step of STANDARD_SAFE_PAYMENT_SCHEDULE) {
+      expect(step.en.trim().length).toBeGreaterThan(0);
+      expect(step.hi.trim().length).toBeGreaterThan(0);
+    }
   });
 });
