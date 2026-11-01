@@ -117,21 +117,82 @@ Return strictly a JSON object:
 
 export function buildBudgetPrompt(intake: IntakeRequest): { system: string; prompt: string } {
   const categoriesList = BUDGET_CATEGORIES.join(', ');
-  const prompt = `Generate percentage budget breakdown for ${intake.occasion} with ₹${intake.budget} budget. Categories: ${categoriesList}. Sum to 100%.`;
-  return { system: SYSTEM_ROLE, prompt };
+  const prompt = `You are an expert Indian celebration budget planner.
+Generate a realistic percentage budget breakdown for an Indian ${intake.occasion} in ${intake.city} with a total budget of ₹${intake.budget.toLocaleString('en-IN')} for ${intake.guestCount} guests.
+Style preference: ${intake.style || 'traditional'}.
+Priorities: ${(intake.priorities || []).join(', ') || 'balanced'}.
+
+Required categories to include:
+${categoriesList}
+
+CRITICAL RULES:
+1. Every category must be one of: ${categoriesList}
+2. The percentage values MUST sum up to exactly 100.
+3. Return a valid JSON object matching this schema:
+{
+  "allocations": [
+    {
+      "category": "venue",
+      "percentage": 25,
+      "reasoning": "Explanation for this allocation based on guest count and city tier"
+    }
+  ],
+  "summary": "1-2 sentence overview of the recommended budget strategy."
+}`;
+  return { system: `${SYSTEM_ROLE}\nYou must output a valid JSON object only.`, prompt };
 }
 
 export function buildWhatIfPrompt(req: WhatIfRequest): { system: string; prompt: string } {
-  const prompt = `Analyze change: "${req.changeDescription}" for current budget ₹${req.currentPlan.totalBudget}.`;
-  return { system: SYSTEM_ROLE, prompt };
+  const prompt = `Analyze this change request for an Indian celebration budget.
+Current total budget: ₹${req.currentPlan.totalBudget.toLocaleString('en-IN')}.
+Change requested: "${req.changeDescription}".
+
+Return a valid JSON object matching this schema:
+{
+  "delta": {
+    "budgetMultiplier": 1.0,
+    "newGuestCount": null,
+    "newEventDate": null,
+    "categoryAdjustments": {}
+  },
+  "options": [
+    {
+      "id": "opt_1",
+      "title": "Option Title",
+      "description": "Description of tradeoff or adjustment",
+      "costImpact": 0
+    }
+  ],
+  "summary": "Brief summary of the what-if impact."
+}`;
+  return { system: `${SYSTEM_ROLE}\nYou must output a valid JSON object only.`, prompt };
 }
 
 export function buildVendorQuotePrompt(req: VendorQuoteRequest): { system: string; prompt: string } {
-  const prompt = `Extract details from vendor quotes.`;
-  return { system: SYSTEM_ROLE, prompt };
+  const prompt = `Extract details from vendor quotes. Output a valid JSON object.`;
+  return { system: `${SYSTEM_ROLE}\nYou must output a valid JSON object only.`, prompt };
 }
 
 export function buildTimelinePrompt(req: TimelineRequest): { system: string; prompt: string } {
-  const prompt = `Generate milestone checklist for ${req.intake.eventDate}.`;
-  return { system: SYSTEM_ROLE, prompt };
+  const prompt = `Generate a structured milestone checklist for a ${req.intake.occasion} on ${req.intake.eventDate} in ${req.intake.city}.
+Language: ${req.language || 'en'}.
+
+Return a valid JSON object matching this schema:
+{
+  "phases": [
+    {
+      "phaseName": "6-12 Months Before",
+      "milestones": [
+        {
+          "title": "Book Venue",
+          "category": "venue",
+          "dueDate": "2026-12-01",
+          "status": "pending"
+        }
+      ]
+    }
+  ],
+  "summary": "Overall milestone roadmap for planning."
+}`;
+  return { system: `${SYSTEM_ROLE}\nYou must output a valid JSON object only.`, prompt };
 }

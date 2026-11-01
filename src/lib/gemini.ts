@@ -54,11 +54,18 @@ async function callGroqJSON<T>(
   systemInstruction?: string,
   modelName: string = 'openai/gpt-oss-120b'
 ): Promise<T> {
-  const messages: { role: 'system' | 'user'; content: string }[] = [];
-  if (systemInstruction) {
-    messages.push({ role: 'system', content: systemInstruction });
-  }
-  messages.push({ role: 'user', content: prompt });
+  const sysMsg = systemInstruction
+    ? `${systemInstruction}\nYou are a helpful AI assistant that outputs responses in valid JSON format only.`
+    : 'You are a helpful AI assistant that outputs responses in valid JSON format only.';
+
+  const userMsg = prompt.toLowerCase().includes('json')
+    ? prompt
+    : `${prompt}\n\nPlease respond with a valid JSON object matching the requested schema.`;
+
+  const messages: { role: 'system' | 'user'; content: string }[] = [
+    { role: 'system', content: sysMsg },
+    { role: 'user', content: userMsg },
+  ];
 
   const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
@@ -113,14 +120,7 @@ export async function callGeminiJSON<T>(
 
   // 1. If Groq Key is available, use Groq ultra-fast inference
   if (groqKey) {
-    try {
-      return await callGroqJSON<T>(groqKey, prompt, systemInstruction);
-    } catch (err: unknown) {
-      if (!geminiKey) {
-        throw err instanceof Error ? err : new Error(String(err));
-      }
-      // If Gemini is also configured, fall through to try Gemini
-    }
+    return await callGroqJSON<T>(groqKey, prompt, systemInstruction);
   }
 
   // 2. Use Google Gemini

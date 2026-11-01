@@ -49,10 +49,34 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 5. Deterministic Math in Code: Convert percentages to exact rupees summing to totalBudget
+    // 5. Deterministic Math in Code: Normalize percentages to sum to exactly 100
+    const rawAllocations = aiValidated.data.allocations;
+    const totalPercentage = rawAllocations.reduce((sum, a) => sum + a.percentage, 0);
+
+    const scaled = rawAllocations.map((a) => ({
+      ...a,
+      percentage: totalPercentage > 0 ? (a.percentage / totalPercentage) * 100 : 100 / rawAllocations.length,
+    }));
+
+    let currentSum = 0;
+    const normalized = scaled.map((a) => {
+      const p = Math.round(a.percentage * 100) / 100;
+      currentSum += p;
+      return { ...a, percentage: p };
+    });
+
+    const diff = Math.round((100 - currentSum) * 100) / 100;
+    if (diff !== 0 && normalized.length > 0) {
+      let maxIdx = 0;
+      for (let i = 1; i < normalized.length; i++) {
+        if (normalized[i].percentage > normalized[maxIdx].percentage) maxIdx = i;
+      }
+      normalized[maxIdx].percentage = Math.round((normalized[maxIdx].percentage + diff) * 100) / 100;
+    }
+
     const exactAllocations = computeAllocations(
       intake.budget,
-      aiValidated.data.allocations
+      normalized
     );
 
     const budgetPlan: BudgetPlan = {
