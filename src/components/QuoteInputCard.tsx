@@ -2,6 +2,9 @@
 
 import React from 'react';
 import type { VendorType, Language } from '@/types';
+import { SAMPLE_HINGLISH_QUOTES, type SampleQuoteItem } from '@/lib/sampleQuotes';
+
+export { SAMPLE_HINGLISH_QUOTES };
 
 interface QuoteInputCardProps {
   quoteText: string;
@@ -15,66 +18,6 @@ interface QuoteInputCardProps {
   language: Language;
 }
 
-export const SAMPLE_HINGLISH_QUOTES: { vendorType: VendorType; title: string; text: string }[] = [
-  {
-    vendorType: 'caterer',
-    title: 'Caterer Quote (Classic Hinglish WhatsApp forward)',
-    text: `Namaste Sharma ji, yeh catering ka estimate hai aapke 250 guests ke liye:
-
-Menu per plate: Rs 1150/- (Pure Veg)
-Includes:
-- 4 Welcome drinks (Mocktails)
-- 4 Starters (Paneer tikka, Hara bhara kabab, Crispy corn, Spring roll)
-- Main course: 2 Paneer sabzi, Dal Makhani, Mix Veg, Pulao, assorted breads (Naan, Roti, Missi)
-- Sweets: Gulab Jamun, Moong Dal Halwa, Ice Cream counter
-
-Not included:
-- Waitstaff bakhshish/tips (approx Rs 500 per boy)
-- Drinking water jars extra
-- Chaat counter will be extra Rs 150 per plate
-
-Payment terms:
-Advance 60% booking par dena hoga cash ya Sharma ji ke personal GPay par. 40% function shuru hone se 2 ghante pehle clear karna padega.
-Cancellation par no refund.
-Contract ki zaroorat nahi hai, hamara 15 saal ka vishwas hai.`,
-  },
-  {
-    vendorType: 'venue',
-    title: 'Banquet & Lawn Quote ("Free Venue" Offer)',
-    text: `Respected Sir,
-Heartiest congratulations for the wedding function!
-Quote for Grand Shahi Palace Lawn for 300 pax:
-
-Special Package:
-- Venue Lawn is COMPLIMENTARY / FREE with catering!
-- Per plate catering charge: Rs 1,450 + taxes
-- Includes: Basic hall lighting, Round tables with white linen, 2 bride/groom green rooms.
-
-Extras:
-- Generator diesel charges: Rs 15,000 per 4 hours if government power cuts.
-- Mandatory venue cleaning & sanitation fee: Rs 12,000.
-- Outside DJ royalty/entry fee: Rs 8,000.
-- AC timing strictly 7:00 PM to 11:30 PM. Overtime Rs 5,000/hour.
-
-Advance: 50% advance for blocking date. 50% 1 week prior.
-Strictly non-refundable deposit.`,
-  },
-  {
-    vendorType: 'decorator',
-    title: 'Wedding Decorator Quote (Ambiguous Floral Package)',
-    text: `Hello Sir, Decor package estimate:
-Total package cost: Rs 2,20,000.
-Deliverables:
-- Main gate floral arch (Hydrangea & Artificial orchid mix)
-- Stage backdrop with golden sofa setup
-- Mandap with floral pillars
-- 10 walkway pillars with fairy lighting
-
-Note: Fresh imported flowers extra as per mandi market rate on wedding day. Sound generator and truss structure extra Rs 25,000.
-Advance: 70% advance on booking, balance on setup morning. Cash only accepted. No written invoice without 18% GST extra.`,
-  },
-];
-
 export function QuoteInputCard({
   quoteText,
   setQuoteText,
@@ -86,9 +29,12 @@ export function QuoteInputCard({
   onAnalyze,
   language,
 }: QuoteInputCardProps) {
-  const handleLoadSample = (sample: typeof SAMPLE_HINGLISH_QUOTES[0]) => {
+  const handleLoadSample = (sample: SampleQuoteItem) => {
     setQuoteText(sample.text);
     setVendorType(sample.vendorType);
+    if (sample.guestCount) {
+      setGuestCount(sample.guestCount);
+    }
   };
 
   return (
@@ -105,26 +51,6 @@ export function QuoteInputCard({
               ? 'वेंडर कोटेशन का एक्स-रे विश्लेषण करें'
               : 'X-Ray Your Vendor Quote Before Paying Advance'}
           </h2>
-        </div>
-
-        {/* Load Sample Quote dropdown / buttons */}
-        <div className="flex flex-wrap gap-2 self-start sm:self-auto">
-          <button
-            type="button"
-            onClick={() => handleLoadSample(SAMPLE_HINGLISH_QUOTES[0])}
-            className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-saffron-100 text-saffron-900 border border-saffron-300 hover:bg-saffron-200 transition-colors"
-            title="Load a messy Hinglish caterer WhatsApp quote"
-          >
-            📋 {language === 'hi' ? 'कैटरर नमूना कोट' : 'Sample Caterer Quote'}
-          </button>
-          <button
-            type="button"
-            onClick={() => handleLoadSample(SAMPLE_HINGLISH_QUOTES[1])}
-            className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-cream-100 text-maroon-900 border border-cream-300 hover:bg-cream-200 transition-colors"
-            title="Load a 'Free Venue' banquet quote"
-          >
-            🏛️ {language === 'hi' ? 'वेन्यू नमूना कोट' : 'Sample Venue Quote'}
-          </button>
         </div>
       </div>
 
@@ -197,6 +123,64 @@ export function QuoteInputCard({
             ? '💡 टिप: WhatsApp के अनौपचारिक संदेश, वर्तनी की त्रुटियां और हिंदी/हिंग्लिश शब्द पूरी तरह समर्थित हैं।'
             : '💡 Tip: Unformatted forwards, spelling quirks, and Hindi/Hinglish vendor terms are fully supported.'}
         </p>
+
+        {/* SAMPLE QUOTES QUICK SELECTOR (Right under the WhatsApp box) */}
+        <div className="mt-3 p-3 bg-cream-100/80 border border-cream-300 rounded-xl space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-maroon-900 flex items-center gap-1.5">
+              <span className="text-saffron-600">⚡</span>
+              <span>
+                {language === 'hi'
+                  ? 'त्वरित परीक्षण के लिए सैंपल WhatsApp कोटेशन चुनें:'
+                  : 'Quick Test: Click a sample WhatsApp quote to load:'}
+              </span>
+            </span>
+            {quoteText && (
+              <button
+                type="button"
+                onClick={() => setQuoteText('')}
+                className="text-[11px] text-gray-500 hover:text-red-700 underline font-medium"
+              >
+                {language === 'hi' ? 'टेक्स्ट साफ करें' : 'Clear box'}
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {SAMPLE_HINGLISH_QUOTES.map((sample) => {
+              const isSelected = quoteText.trim() === sample.text.trim();
+              return (
+                <button
+                  key={sample.id}
+                  type="button"
+                  onClick={() => handleLoadSample(sample)}
+                  className={`p-2.5 text-xs font-semibold rounded-lg border text-left transition-all flex flex-col gap-1 cursor-pointer ${
+                    isSelected
+                      ? 'bg-maroon-900 text-white border-maroon-900 shadow-sm ring-2 ring-saffron-500'
+                      : 'bg-white text-gray-800 border-cream-300 hover:border-maroon-700 hover:bg-cream-50 shadow-2xs'
+                  }`}
+                  title={`Load ${sample.labelEn}`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <span className="text-base">{sample.icon}</span>
+                    <span
+                      className={`text-[10px] px-1.5 py-0.5 rounded ${
+                        isSelected
+                          ? 'bg-saffron-500 text-white font-bold'
+                          : 'bg-cream-100 text-gray-600'
+                      }`}
+                    >
+                      {sample.guestCount} {language === 'hi' ? 'मेहमान' : 'pax'}
+                    </span>
+                  </div>
+                  <span className="font-bold text-[11px] leading-tight line-clamp-1">
+                    {language === 'hi' ? sample.labelHi : sample.labelEn}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       {/* Submit Button */}
