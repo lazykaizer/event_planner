@@ -4,6 +4,7 @@ import { checkRateLimit } from '@/lib/rateLimit';
 import { buildWhatIfPrompt } from '@/lib/prompts';
 import { callGeminiJSON } from '@/lib/gemini';
 import { computeAllocations } from '@/lib/budgetMath';
+import { apiCache, hashPayload } from '@/lib/cache';
 import type { WhatIfResult, WhatIfOption } from '@/types';
 
 export async function POST(req: NextRequest) {
@@ -30,6 +31,17 @@ export async function POST(req: NextRequest) {
     }
 
     const validReq = parseResult.data;
+    const cacheKey = hashPayload('whatif', validReq);
+    const cached = apiCache.get<{ success: boolean; delta: unknown; result: WhatIfResult; newTotalBudget: number }>(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached, {
+        status: 200,
+        headers: {
+          'X-Cache': 'HIT',
+          'Cache-Control': 'public, max-age=900, stale-while-revalidate=60',
+        },
+      });
+    }
     const { system, prompt } = buildWhatIfPrompt(validReq);
     const rawAiResponse = await callGeminiJSON(prompt, system);
 
@@ -77,11 +89,20 @@ export async function POST(req: NextRequest) {
       tradeOffExplanation: aiData.tradeOffExplanation,
     };
 
-    return NextResponse.json({
+    const responsePayload = {
       success: true,
       delta: aiData.delta,
       result,
       newTotalBudget: targetTotal,
+    };
+    apiCache.set(cacheKey, responsePayload);
+
+    return NextResponse.json(responsePayload, {
+      status: 200,
+      headers: {
+        'X-Cache': 'MISS',
+        'Cache-Control': 'public, max-age=900, stale-while-revalidate=60',
+      },
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Internal server error';

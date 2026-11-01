@@ -4,6 +4,7 @@ import { checkRateLimit } from '@/lib/rateLimit';
 import { buildVendorQuotePrompt } from '@/lib/prompts';
 import { callGeminiJSON } from '@/lib/gemini';
 import { checkRedFlags, computeOverallRisk, suggestPaymentSchedule } from '@/lib/redFlags';
+import { apiCache, hashPayload } from '@/lib/cache';
 import type { VendorAnalysis, VendorRedFlag } from '@/types';
 
 export async function POST(req: NextRequest) {
@@ -30,6 +31,17 @@ export async function POST(req: NextRequest) {
     }
 
     const validReq = parseResult.data;
+    const cacheKey = hashPayload('vendor-quote', validReq);
+    const cached = apiCache.get<{ success: boolean; analyses: VendorAnalysis[] }>(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached, {
+        status: 200,
+        headers: {
+          'X-Cache': 'HIT',
+          'Cache-Control': 'public, max-age=900, stale-while-revalidate=60',
+        },
+      });
+    }
     const { system, prompt } = buildVendorQuotePrompt(validReq);
     const rawAiResponse = await callGeminiJSON(prompt, system);
 
@@ -93,7 +105,16 @@ export async function POST(req: NextRequest) {
       };
     });
 
-    return NextResponse.json({ success: true, analyses });
+    const responsePayload = { success: true, analyses };
+    apiCache.set(cacheKey, responsePayload);
+
+    return NextResponse.json(responsePayload, {
+      status: 200,
+      headers: {
+        'X-Cache': 'MISS',
+        'Cache-Control': 'public, max-age=900, stale-while-revalidate=60',
+      },
+    });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json({ error: message }, { status: 500 });

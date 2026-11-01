@@ -122,9 +122,29 @@ export const IntakeRequestSchema = z.object({
 
 export type IntakeRequest = z.infer<typeof IntakeRequestSchema>;
 
+export const BudgetPlanInputSchema = z
+  .object({
+    totalBudget: z.number().positive(),
+    allocations: z
+      .array(
+        z.object({
+          category: BudgetCategoryEnum,
+          percentage: z.number().min(0).max(100),
+          amount: z.number().min(0),
+          reasoning: z.string().optional().default(''),
+          isManualOverride: z.boolean().optional().default(false),
+        })
+      )
+      .default([]),
+    summary: z.string().optional().default(''),
+    createdAt: z.string().default(() => new Date().toISOString()),
+    version: z.number().int().default(1),
+  })
+  .passthrough();
+
 export const WhatIfRequestSchema = z.object({
   changeDescription: z.string().transform(sanitize).pipe(z.string().min(1).max(500)),
-  currentPlan: z.any(),
+  currentPlan: BudgetPlanInputSchema,
   intake: IntakeRequestSchema,
   language: z.enum(['en', 'hi']).default('en'),
 });
@@ -138,7 +158,7 @@ export const VendorQuoteRequestSchema = z.object({
       vendorType: VendorTypeEnum.optional(),
     })
   ),
-  budgetCategory: z.any().optional(),
+  budgetCategory: BudgetCategoryEnum.optional(),
   language: z.enum(['en', 'hi']).default('en'),
 });
 
@@ -146,7 +166,7 @@ export type VendorQuoteRequest = z.infer<typeof VendorQuoteRequestSchema>;
 
 export const TimelineRequestSchema = z.object({
   intake: IntakeRequestSchema,
-  budgetPlan: z.any(),
+  budgetPlan: BudgetPlanInputSchema.optional().nullable(),
   language: z.enum(['en', 'hi']).default('en'),
 });
 
@@ -193,11 +213,65 @@ export const AIWhatIfResponseSchema = z.object({
 
 export type AIWhatIfResponse = z.infer<typeof AIWhatIfResponseSchema>;
 
+export const AIVendorItemSchema = z
+  .object({
+    vendorName: z.string().default('Vendor'),
+    vendorType: VendorTypeEnum.default('other'),
+    totalPrice: z.number().nullable().default(null),
+    pricePerUnit: z.number().nullable().default(null),
+    unitDescription: z.string().default(''),
+    included: z.array(z.string()).default([]),
+    notIncluded: z.array(z.string()).default([]),
+    guestsCovered: z.number().nullable().default(null),
+    extraCharges: z.array(z.string()).default([]),
+    advanceRequested: z.number().nullable().default(null),
+    advancePercentage: z.number().nullable().default(null),
+    cancellationTerms: z.string().default(''),
+    missingInfo: z.array(z.string()).default([]),
+    // Compatibility fields for ExtractedQuote & rule engines
+    perUnitPrice: z.number().default(0),
+    unitType: z.enum(['per_plate', 'per_day', 'per_event', 'lump_sum']).default('lump_sum'),
+    baseGuests: z.number().default(100),
+    fixedCharges: z.number().default(0),
+    fixedChargesBreakdown: z.array(z.object({ name: z.string(), amount: z.number() })).default([]),
+    taxPercentage: z.number().nullable().default(null),
+    taxAmountStated: z.number().nullable().default(null),
+    taxIncludedInBase: z.boolean().default(false),
+    paymentMode: z.string().default('Bank transfer / UPI'),
+    writtenAgreementMentioned: z.boolean().default(false),
+    ambiguities: z.array(z.string()).default([]),
+    potentialHiddenCosts: z.array(z.string()).default([]),
+  })
+  .passthrough();
+
+export const AIRedFlagItemSchema = z
+  .object({
+    vendorIndex: z.number().default(0),
+    severity: z.enum(['low', 'medium', 'high']).default('medium'),
+    title: z.string().default('Notice'),
+    message: z.string().default(''),
+  })
+  .passthrough();
+
 export const AIVendorQuoteSchema = z.object({
-  vendors: z.array(z.any()),
-  aiRedFlags: z.array(z.any()),
+  vendors: z.array(AIVendorItemSchema).default([]),
+  aiRedFlags: z.array(AIRedFlagItemSchema).default([]),
 });
 
+export const AITimelineTaskItemSchema = z
+  .object({
+    id: z.string().default(() => Math.random().toString(36).substring(2, 9)),
+    title: z.string(),
+    description: z.string().default(''),
+    deadline: z.string().default(() => new Date().toISOString()),
+    dependsOn: z.array(z.string()).default([]),
+    completed: z.boolean().default(false),
+    delayed: z.boolean().default(false),
+    atRisk: z.boolean().default(false),
+    category: z.string().default('misc'),
+  })
+  .passthrough();
+
 export const AITimelineResponseSchema = z.object({
-  tasks: z.array(z.any()),
+  tasks: z.array(AITimelineTaskItemSchema).default([]),
 });

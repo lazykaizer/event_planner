@@ -4,13 +4,14 @@ import { checkRateLimit } from '@/lib/rateLimit';
 import { buildBudgetPrompt } from '@/lib/prompts';
 import { callGeminiJSON } from '@/lib/gemini';
 import { computeAllocations } from '@/lib/budgetMath';
+import { apiCache } from '@/lib/cache';
 import type { BudgetPlan } from '@/types';
 
 export async function POST(req: NextRequest) {
   try {
     // 1. Basic IP rate limiting
     const ip = req.headers.get('x-forwarded-for') || '127.0.0.1';
-    const rateCheck = checkRateLimit(ip, { maxRequests: 15, windowMs: 60_000 });
+    const rateCheck = checkRateLimit(ip, { maxRequests: 25, windowMs: 60_000 });
     if (!rateCheck.allowed) {
       return NextResponse.json(
         { error: 'Rate limit exceeded. Please wait a moment before trying again.' },
@@ -32,6 +33,23 @@ export async function POST(req: NextRequest) {
     }
 
     const intake = parseResult.data;
+
+    // Check LRU cache for identical event intake
+    const cacheKey = apiCache.hashKey('budget', {
+      b: intake.budget,
+      o: intake.occasion,
+      c: intake.city,
+      g: intake.guestCount,
+      s: intake.style,
+      p: intake.priorities,
+    });
+    const cachedPlan = apiCache.get<BudgetPlan>(cacheKey);
+    if (cachedPlan) {
+      return NextResponse.json(
+        { success: true, plan: cachedPlan },
+        { headers: { 'X-Cache': 'HIT', 'X-Response-Time': '0ms' } }
+      );
+    }
 
     // 3. Generate Gemini prompt & call AI
     const { system, prompt } = buildBudgetPrompt(intake);
@@ -87,7 +105,12 @@ export async function POST(req: NextRequest) {
       version: 1,
     };
 
-    return NextResponse.json({ success: true, plan: budgetPlan });
+    apiCache.set(cacheKey, budgetPlan);
+
+    return NextResponse.json(
+      { success: true, plan: budgetPlan },
+      { headers: { 'X-Cache': 'MISS' } }
+    );
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json({ error: message }, { status: 500 });

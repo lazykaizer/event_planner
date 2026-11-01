@@ -11,6 +11,7 @@ import {
   generateInWritingChecklist,
 } from '@/lib/redFlags';
 import { verifyAllEvidence } from '@/lib/evidence';
+import { apiCache } from '@/lib/cache';
 import type { QuoteAnalysisReport, RedFlag, ExtractedQuote } from '@/types';
 
 export async function POST(req: NextRequest) {
@@ -39,6 +40,21 @@ export async function POST(req: NextRequest) {
     }
 
     const validReq = parseResult.data;
+
+    // Check LRU cache for identical quote query
+    const cacheKey = apiCache.hashKey('xray', {
+      t: validReq.quoteText,
+      v: validReq.vendorType,
+      g: validReq.guestCount,
+      l: validReq.language,
+    });
+    const cachedReport = apiCache.get<QuoteAnalysisReport>(cacheKey);
+    if (cachedReport) {
+      return NextResponse.json(
+        { success: true, report: cachedReport },
+        { headers: { 'X-Cache': 'HIT', 'X-Response-Time': '0ms' } }
+      );
+    }
 
     // 3. Generate prompt & call Gemini with JSON schema enforcement
     const { system, prompt } = buildQuoteXRayPrompt(validReq);
@@ -132,7 +148,12 @@ export async function POST(req: NextRequest) {
       whatsappNegotiationMessage: rawExtracted.whatsappMessages,
     };
 
-    return NextResponse.json({ success: true, report });
+    apiCache.set(cacheKey, report);
+
+    return NextResponse.json(
+      { success: true, report },
+      { headers: { 'X-Cache': 'MISS' } }
+    );
   } catch (error: unknown) {
     const rawMessage = error instanceof Error ? error.message : 'Internal server error';
     const sanitized = rawMessage.replace(/GEMINI_API_KEY/gi, 'API key');

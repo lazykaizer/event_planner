@@ -3,6 +3,7 @@ import { TimelineRequestSchema, AITimelineResponseSchema } from '@/lib/schemas';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { buildTimelinePrompt } from '@/lib/prompts';
 import { callGeminiJSON } from '@/lib/gemini';
+import { apiCache, hashPayload } from '@/lib/cache';
 import type { Timeline, TimelineTask, BudgetCategory } from '@/types';
 
 export async function POST(req: NextRequest) {
@@ -29,6 +30,17 @@ export async function POST(req: NextRequest) {
     }
 
     const validReq = parseResult.data;
+    const cacheKey = hashPayload('timeline', validReq);
+    const cached = apiCache.get<{ success: boolean; timeline: Timeline }>(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached, {
+        status: 200,
+        headers: {
+          'X-Cache': 'HIT',
+          'Cache-Control': 'public, max-age=900, stale-while-revalidate=60',
+        },
+      });
+    }
     const { system, prompt } = buildTimelinePrompt(validReq);
     const rawAiResponse = await callGeminiJSON(prompt, system);
 
@@ -76,7 +88,16 @@ export async function POST(req: NextRequest) {
           : 'Finalize your venue and catering first to lock in rates and dates before starting downstream bookings.',
     };
 
-    return NextResponse.json({ success: true, timeline });
+    const responsePayload = { success: true, timeline };
+    apiCache.set(cacheKey, responsePayload);
+
+    return NextResponse.json(responsePayload, {
+      status: 200,
+      headers: {
+        'X-Cache': 'MISS',
+        'Cache-Control': 'public, max-age=900, stale-while-revalidate=60',
+      },
+    });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json({ error: message }, { status: 500 });
