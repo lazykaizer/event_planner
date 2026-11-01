@@ -10,6 +10,10 @@
 [![Vulnerabilities: 0](https://img.shields.io/badge/Vulnerabilities-0-brightgreen.svg)]()
 [![Code Quality](https://img.shields.io/badge/Code_Quality-Top_Notch-brightgreen.svg)]()
 
+**Live Demo:** <https://event-planner-222642783314.asia-south1.run.app>  
+**Repository:** <https://github.com/lazykaizer/event_planner>  
+**Region:** asia-south1 · **GCP Project:** event-planner-513414
+
 > **"Don't pay the advance until you've X-Rayed the quote."**  
 > An AI-powered consumer protection platform that decodes messy WhatsApp vendor quotes into true all-in costs, exposes hidden surcharges, flags predatory payment clauses, and drafts culturally polite negotiation replies.
 
